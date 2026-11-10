@@ -169,50 +169,7 @@
   }
 
   /* =========================================================
-     02 Datos
-     ========================================================= */
-  function renderDatos() {
-    var defectos = D.notas.filter(function (n) { return /Defecto|Criterio/.test(n['Impacto']); });
-    var otras = D.notas.filter(function (n) { return !/Defecto|Criterio/.test(n['Impacto']); });
-    $('titulo-defectos').textContent = defectos.length + ' defectos y re-expresiones';
-    var item = function (n, k, conChip) {
-      return '<div class="defect"><span class="badge-n' + (conChip ? ' muted' : '') + '">' + k + '</span><p><strong>' + esc(n['Tema']) + '.</strong> ' + esc(n['Nota']) + '</p>' +
-        (conChip ? '<span class="chip ' + (/Verificado/.test(n['Impacto']) ? 'ok' : /Sin resolver|Supuesto/.test(n['Impacto']) ? 'warn' : 'info') + '">' + esc(n['Impacto']) + '</span>' : '') + '</div>';
-    };
-    $('defectos').innerHTML = defectos.map(function (n, k) { return item(n, k + 1, false); }).join('') +
-      '<h3 class="h3 mt" style="margin-bottom:4px">Otras notas</h3>' + otras.map(function (n, k) { return item(n, defectos.length + k + 1, true); }).join('');
-    $('procedencia').innerHTML = D.procedencia.map(function (f) {
-      var est = String(f['Estado']).toUpperCase();
-      return '<div class="prov-row"><span class="prov-y">' + esc(f['Año']) + '</span><span class="prov-t">' + esc(f['Procedencia']) + '</span><span class="chip ' +
-        (est === 'OK' ? 'ok' : 'warn') + '">' + esc(est) + '</span></div>';
-    }).join('');
-    var ING = cta('er', 'ING'), AT = cta('esf', 'AT'), P = L() - 1;
-    $('nota-unidad').innerHTML = '<strong>Unidad.</strong> El sufijo «M» significa <strong>miles</strong>, no millones. Los ingresos de ' + ys()[P] + ' (' +
-      F.miles(ING.nom[P]) + ') equivalen a ' + esc(F.corto(ING.nom[P])) + ' de pesos; leerlos como millones daría un balance de ' + nf0.format(AT.nom[P] / 1e6) + ' billones.';
-    $('tb-def').innerHTML = '<thead><tr><th>Año</th><th>Inflación</th><th>Índice</th><th>Factor a ' + D.meta.anioBaseReal + '</th></tr></thead><tbody>' +
-      D.deflactor.map(function (d, i) {
-        return '<tr><td class="mono">' + d.year + '</td><td>' + (i === 0 ? '<span class="unit">base</span>' : cellNum(F.pct(d.inflacion / 100, 2))) + '</td><td>' +
-          cellNum(nf2.format(d.indice)) + '</td><td>' + cellNum(nf3.format(d.factor)) + '</td></tr>';
-      }).join('') + '</tbody>';
-    renderReexp();
-  }
-  function renderReexp() {
-    var solo = $('chk-reexp').checked;
-    var filas = D.reexpresiones.map(function (r) {
-      var i = yi(r['Año']), tot = r['Estado'] === 'ER' ? cta('er', 'ING').nom[i] : cta('esf', 'AT').nom[i];
-      var dif = Number(r['Diferencia']);
-      return { r: r, dif: dif, peso: tot ? Math.abs(dif) / tot : 0 };
-    }).filter(function (x) { return !solo || x.peso > 0.01; });
-    $('tb-reexp').innerHTML = '<thead><tr><th>Cuenta</th><th>Año</th><th>Usado</th><th>Alternativo</th><th>% total</th></tr></thead><tbody>' +
-      filas.map(function (x) {
-        return '<tr><td>' + esc(x.r['Cuenta']) + ' <span class="unit">· ' + esc(x.r['Estado']) + '</span></td><td class="mono">' + esc(x.r['Año']) + '</td><td>' +
-          cellNum(F.millones(Number(x.r['Valor usado'])), x.r['Fuente usada']) + '</td><td>' +
-          cellNum(F.millones(Number(x.r['Valor alternativo'])), x.r['Fuente alternativa']) + '</td><td>' + cellNum(F.pct(x.peso)) + '</td></tr>';
-      }).join('') + '</tbody>';
-  }
-
-  /* =========================================================
-     03 Resumen
+     02 Resumen
      ========================================================= */
   function kpiCompact(o) {
     var d = document.createElement('div');
@@ -269,7 +226,7 @@
   }
 
   /* =========================================================
-     04 Horizontal
+     03 Horizontal
      ========================================================= */
   var CLAVE_ER = ['ING', 'CV', 'UB', 'GOP', 'UO', 'IMP', 'UN'];
   var SUBT = ['UB', 'UO', 'UAI', 'UN', 'AC', 'ANC', 'AT', 'PC', 'PNC', 'PT', 'PAT', 'TPP'];
@@ -503,7 +460,7 @@
   }
 
   /* =========================================================
-     05 Vertical
+     04 Vertical
      ========================================================= */
   function renderVertical() {
     var V = D.vertical, y1 = V.y1, y2 = V.y2, i1 = yi(y1), i2 = yi(y2);
@@ -573,7 +530,7 @@
       (idxMin(mb) === i2 ? ', el mínimo de la serie' : '') + '. En servicios profesionales ese costo suele ser, sobre todo, nómina técnica (no verificado en las notas).</p>';
     $('prosa-vertical-2').innerHTML = '<p><strong>El balance está concentrado en cartera.</strong> Los deudores comerciales son el ' + F.pct(share(CxC, i2)) + ' del activo total y el ' +
       F.pct(CxC.nom[i2] / AC.nom[i2]) + ' del activo corriente. La propiedad, planta y equipo pesa ' + F.pct(share(PPE, i2)) + ' del activo en ' + y2 + ' (' + F.pct(share(PPE, i1)) + ' en ' + y1 + ').' +
-      (k22 >= 0 && OAF && OAF.nom[k22] > 0 ? ' Parte de su caída histórica es contable: en la re-expresión de 2022 se trasladaron ' + F.corto(OAF.nom[k22]) + ' a otros activos financieros (ver Datos).' : '') + '</p>';
+      (k22 >= 0 && OAF && OAF.nom[k22] > 0 ? ' Parte de su caída histórica es contable: en la re-expresión de 2022 se trasladaron ' + F.corto(OAF.nom[k22]) + ' a otros activos financieros.' : '') + '</p>';
 
     // Tablas
     var pc = function (p) { return ok(p) ? '<span class="pbar">' + esc(F.pct(p, 2)) + '<i style="width:' + Math.min(100, Math.abs(p) * 100).toFixed(1) + '%"></i></span>' : ''; };
@@ -597,7 +554,7 @@
   }
 
   /* =========================================================
-     06 Indicadores
+     05 Indicadores
      ========================================================= */
   function fmtInd(i, v) {
     if (!ok(v)) return { n: 'n.a.', u: '' };
@@ -615,7 +572,7 @@
       case 'PA': return 'Igual a la liquidez corriente: la compañía no tiene inventarios.';
       case 'CG': return extremo + 'El activo corriente sin inventarios cubre ' + nf0.format(v) + ' días de costos y gastos operacionales.';
       case 'DI': return 'El efectivo cubre el ' + F.pct(v) + ' del pasivo corriente. En ' + y.length + ' años nunca superó ' + nf2.format(vals[mx]) + '.';
-      case 'CT': return extremo + (v >= 0 ? 'Sobran ' : 'Faltan ') + F.corto(Math.abs(v)) + ' de recursos de corto plazo.';
+      case 'CT': return extremo + (v >= 0 ? 'Sobran ' : 'Faltan ') + F.corto(Math.abs(v)) + ' de recursos de corto plazo (' + lblModo() + ').';
       case 'CE': return extremo + 'Los activos cubren ' + nf2.format(v) + ' veces la deuda total' + (v > 1 ? '.' : ': sin margen.');
       case 'END': return extremo + 'Del ' + F.pct(vals[mx]) + ' en ' + y[mx] + ' al ' + F.pct(v) + '.';
       case 'ROT': return extremo + 'La compañía tarda ' + nf0.format(v) + ' días en cobrar lo que factura.';
@@ -645,6 +602,7 @@
     });
 
     // Tabla: peor momento en rojo, último año en negrita
+    $('foot-ind').textContent = 'Capital de trabajo en millones de ' + lblModo() + ' (cambia con el selector Pesos nominales / Pesos de ' + D.meta.anioBaseReal + ' del análisis horizontal); el resto en veces, días o porcentaje, que no dependen de la inflación. En rojo, el peor momento de cada serie.';
     $('tb-ind').innerHTML = '<thead><tr><th>Indicador</th>' + y.map(function (a, k) { return '<th class="' + (k === l ? 'last' : '') + '">' + a + '</th>'; }).join('') + '</tr></thead><tbody>' +
       D.indicadores.map(function (i) {
         var vals = i.unidad === '$' && S.modo === 'real' ? i.valoresReales : i.valores;
@@ -695,7 +653,7 @@
   }
 
   /* =========================================================
-     07 Diagnóstico
+     06 Diagnóstico
      ========================================================= */
   function renderDiagnostico() {
     var y = ys(), l = L(), END = ind('END').valores, CE = ind('CE').valores, CT = ind('CT').valores, DI = ind('DI').valores, LC = ind('LC').valores;
@@ -733,7 +691,7 @@
   function renderAll() {
     setAll('.y-base', D.meta.anioBaseReal);
     setAll('.lbl-modo', lblModo());
-    [renderPortada, renderPerfil, renderDatos, renderResumen, renderHorizontal, renderVertical, renderIndicadores, renderDiagnostico].forEach(function (fn) {
+    [renderPortada, renderPerfil, renderResumen, renderHorizontal, renderVertical, renderIndicadores, renderDiagnostico].forEach(function (fn) {
       try { fn(); } catch (e) { mostrarError('Error al dibujar (' + fn.name + '): ' + e.message); console.error(e); }
     });
   }
@@ -775,7 +733,6 @@
     bindSeg('modo', 'modo', function () { setAll('.lbl-modo', lblModo()); renderHorizontal(); renderIndicadores(); });
     bindSeg('var', 'variacion', function () { renderTablaClave(); renderTablaFull(); });
     bindSeg('estado', 'estado', renderTablaFull);
-    $('chk-reexp').addEventListener('change', renderReexp);
     $('btn-copiar').addEventListener('click', function () {
       var ta = $('txt-prompt'), btn = this;
       var done = function () { btn.textContent = 'Copiado'; btn.classList.add('is-done'); setTimeout(function () { btn.textContent = 'Copiar prompt'; btn.classList.remove('is-done'); }, 1800); };

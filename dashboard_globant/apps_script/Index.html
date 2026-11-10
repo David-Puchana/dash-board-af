@@ -23,7 +23,6 @@
       </div>
       <nav class="nav" aria-label="Secciones">
         <a href="#perfil">Perfil</a>
-        <a href="#datos">Datos</a>
         <a href="#resumen">Resumen</a>
         <a href="#horizontal">Horizontal</a>
         <a href="#vertical">Vertical</a>
@@ -83,42 +82,10 @@
       </div>
     </section>
 
-    <!-- ===================== 02 DATOS ===================== -->
-    <section class="section alt" id="datos">
-      <div class="wrap">
-        <div class="sec-head"><span class="sec-num">02</span><h2>De dónde sale cada cifra</h2></div>
-        <p class="sec-lead">Los archivos originales no se pueden apilar sin más: contienen columnas duplicadas, filas corridas y re-expresiones contables. Esta es la trazabilidad completa.</p>
-        <div class="row">
-          <div class="col-main">
-            <h3 class="h3" id="titulo-defectos">Defectos detectados</h3>
-            <div class="defects" id="defectos"></div>
-          </div>
-          <div class="col-side">
-            <h3 class="h3" style="margin:0">Procedencia por ejercicio</h3>
-            <div class="prov" id="procedencia"></div>
-            <div class="note"><p id="nota-unidad"></p></div>
-          </div>
-        </div>
-        <div class="row mt">
-          <div class="col-half">
-            <h3 class="h3">Deflactor (IPC Colombia)</h3>
-            <div class="tbl-box"><div class="tbl-scroll"><table class="tbl" id="tb-def"></table></div>
-              <p class="tbl-foot">Factor = índice del año base ÷ índice del año. Fuente: DANE, IPC total nacional, variación anual a diciembre.</p></div>
-          </div>
-          <div class="col-half">
-            <div class="card-head-row"><h3 class="h3">Diferencias entre versiones</h3>
-              <label class="label" style="display:inline-flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" id="chk-reexp" checked> Solo &gt; 1% del total</label></div>
-            <div class="tbl-box"><div class="tbl-scroll tall"><table class="tbl" id="tb-reexp"></table></div>
-              <p class="tbl-foot">Cifra usada frente a la otra versión disponible de la misma cifra (reporte propio o comparativo siguiente).</p></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ===================== 03 RESUMEN ===================== -->
+    <!-- ===================== 02 RESUMEN ===================== -->
     <section class="section" id="resumen">
       <div class="wrap">
-        <div class="sec-head"><span class="sec-num">03</span><h2 id="titulo-resumen">Dónde está la compañía</h2></div>
+        <div class="sec-head"><span class="sec-num">02</span><h2 id="titulo-resumen">Dónde está la compañía</h2></div>
         <p class="sec-lead" id="lead-resumen"></p>
         <div class="kpis" id="kpis-resumen"></div>
         <div class="row tight mt">
@@ -138,10 +105,10 @@
       </div>
     </section>
 
-    <!-- ===================== 04 HORIZONTAL ===================== -->
+    <!-- ===================== 03 HORIZONTAL ===================== -->
     <section class="section" id="horizontal">
       <div class="wrap">
-        <div class="sec-head"><span class="sec-num">04</span><h2>Análisis horizontal</h2></div>
+        <div class="sec-head"><span class="sec-num">03</span><h2>Análisis horizontal</h2></div>
         <p class="sec-lead" id="lead-horizontal"></p>
         <div class="controls">
           <div class="seg" role="group" aria-label="Modo de variación">
@@ -239,10 +206,10 @@
       </div>
     </section>
 
-    <!-- ===================== 05 VERTICAL ===================== -->
+    <!-- ===================== 04 VERTICAL ===================== -->
     <section class="section alt" id="vertical">
       <div class="wrap">
-        <div class="sec-head"><span class="sec-num">05</span><h2>Análisis vertical</h2></div>
+        <div class="sec-head"><span class="sec-num">04</span><h2>Análisis vertical</h2></div>
         <p class="sec-lead">Peso de cada cuenta dentro de su total: en resultados sobre los ingresos ordinarios, en balance sobre el activo total. Mide la estructura, no el ritmo.</p>
         <div class="row tight">
           <div class="card col-half">
@@ -278,16 +245,16 @@
       </div>
     </section>
 
-    <!-- ===================== 06 INDICADORES ===================== -->
+    <!-- ===================== 05 INDICADORES ===================== -->
     <section class="section" id="indicadores">
       <div class="wrap">
-        <div class="sec-head"><span class="sec-num">06</span><h2>Indicadores de salud financiera</h2></div>
+        <div class="sec-head"><span class="sec-num">05</span><h2>Indicadores de salud financiera</h2></div>
         <p class="sec-lead">Los siete indicadores solicitados, más dos complementarios, calculados sobre la serie depurada.</p>
         <div class="note warn" style="margin-bottom:20px"><p id="nota-coinciden"></p></div>
         <div class="kpis" id="kpis-indicadores"></div>
         <div class="tbl-box mt">
           <div class="tbl-scroll"><table class="tbl" id="tb-ind"></table></div>
-          <p class="tbl-foot">Capital de trabajo en millones de pesos; el resto en veces, días o porcentaje según corresponda. En rojo, el peor momento de cada serie.</p>
+          <p class="tbl-foot" id="foot-ind"></p>
         </div>
         <div class="row tight mt">
           <div class="card col-half">
@@ -315,10 +282,10 @@
       </div>
     </section>
 
-    <!-- ===================== 07 DIAGNÓSTICO ===================== -->
+    <!-- ===================== 06 DIAGNÓSTICO ===================== -->
     <section class="section diag" id="diagnostico">
       <div class="wrap">
-        <div class="sec-head"><span class="sec-num">07</span><h2>Diagnóstico</h2></div>
+        <div class="sec-head"><span class="sec-num">06</span><h2>Diagnóstico</h2></div>
         <p class="sec-lead">Qué dicen las tres lecturas juntas.</p>
         <div class="diag-grid" id="diag-grid"></div>
         <div class="emph" id="emph"></div>
