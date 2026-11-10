@@ -385,12 +385,6 @@ tr:hover .pbar i { opacity: 1; }
 .diag .emph { margin-top: 32px; }
 .diag .emph p { color: #2A2C22; }
 
-/* Prompt */
-.prompt-box {
-  width: 100%; min-height: 300px; resize: vertical; font: 12px/1.6 var(--mono); color: var(--ink);
-  background: var(--bone); border: 1px solid var(--rule); border-radius: 8px; padding: 14px;
-}
-
 /* Pie */
 .footer { background: var(--ink); color: var(--nav-sub); font-size: 12px; }
 .footer .wrap { padding-top: 22px; padding-bottom: 22px; display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; align-items: center; }
