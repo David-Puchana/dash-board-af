@@ -31,7 +31,7 @@ AQUI = Path(__file__).resolve().parent
 SALIDA = AQUI / "pages"
 BD = AQUI / "data" / "BD_Dashboard_Globant.xlsx"
 ANIO_VERTICAL_1, ANIO_VERTICAL_2 = 2024, 2025
-LOGO_URL = ""
+LOGO_URL = "https://statics.globant.com/com/public/2025-11/Globant%20%281%29_0.svg"
 
 HEADERS = """/*
   X-Robots-Tag: noindex, nofollow

@@ -131,7 +131,7 @@
     $('meta-strip').innerHTML = meta.map(function (m) {
       return '<div><div class="k">' + esc(m[0]) + '</div><div class="v ' + m[2] + '">' + esc(m[1]) + '</div></div>';
     }).join('');
-    if (window.LOGO_URL) $('logo-slot').innerHTML = '<img src="' + esc(window.LOGO_URL) + '" alt="Logotipo">';
+    if (window.LOGO_URL) { $('logo-slot').innerHTML = '<img src="' + esc(window.LOGO_URL) + '" alt="Globant">'; $('logo-slot').classList.add('con-logo'); }
   }
 
   /* =========================================================
@@ -663,16 +663,29 @@
     var UAI = cta('er', 'UAI').nom[l], UN = cta('er', 'UN').nom[l];
     var P = l - 1, solvMejora = END[l] < END[P] && CE[l] > CE[P], opPeor = mb[l] < mb[P] && mo[l] < mo[P], cartera = CxC.nom[l] / AC.nom[l];
     var kTmin = idxMin(tasas), kTmax = idxMax(tasas);
+    var kMoMin = idxMin(mo), kMoMax = idxMax(mo), ROT = ind('ROT').valores;
+    // TRM de cierre (Banco de la República). Referencia externa citada, no entra en ningún cálculo del modelo.
+    var TRM_CIERRE = { 2023: 3822.05, 2024: 4409.15, 2025: 3757.08 };
+    var trmVar = (TRM_CIERRE[y[l]] && TRM_CIERRE[y[P]]) ? vp(TRM_CIERRE[y[P]], TRM_CIERRE[y[l]]) : null;
+    var kT35 = -1;  // año (desde 2022, tarifa general del 35 %) con la tasa efectiva más alta por encima de ella
+    y.forEach(function (a, i) { if (a >= 2022 && ok(tasas[i]) && tasas[i] > 0.35 && (kT35 < 0 || tasas[i] > tasas[kT35])) kT35 = i; });
     var bloques = [
       [solvMejora ? 'La solvencia mejoró' : 'La solvencia no mejoró este año', 'El endeudamiento pasó de ' + F.pct(END[P]) + ' en ' + y[P] + ' a ' + F.pct(END[l]) + ' en ' + y[l] +
         ' (máximo de la serie: ' + F.pct(END[kE]) + ' en ' + y[kE] + ') y la capacidad de endeudamiento de ' + nf2.format(CE[P]) + ' a ' + nf2.format(CE[l]) + ' veces. El capital de trabajo pasó de ' +
         F.corto(CT[P]) + ' a ' + F.corto(CT[l]) + ' (nominal; mínimo de la serie: ' + F.corto(CT[kT]) + ' en ' + y[kT] + ').'],
-      [opPeor ? 'El problema está en la operación' : 'La operación se sostiene', 'El margen bruto está en ' + F.pct(mb[l], 2) + (idxMin(mb) === l ? ' (mínimo de la serie)' : '') + ' y el operacional en ' + F.pct(mo[l], 2) +
-        ', frente a ' + F.pct(mb[P], 2) + ' y ' + F.pct(mo[P], 2) + ' en ' + y[P] + '. Estos datos no permiten separar precio, volumen, tipo de cambio ni precios de transferencia con el grupo: son las hipótesis a contrastar con las notas y el 20-F.'],
+      [opPeor ? 'Los márgenes se estrecharon, dentro de su franja' : 'Los márgenes se sostienen', 'El margen bruto está en ' + F.pct(mb[l], 2) + (idxMin(mb) === l ? ' (mínimo de la serie)' : '') + ' y el operacional en ' + F.pct(mo[l], 2) +
+        ', frente a ' + F.pct(mb[P], 2) + ' y ' + F.pct(mo[P], 2) + ' en ' + y[P] + '. En los ' + y.length + ' años de la serie el margen operacional solo se ha movido entre ' + F.pct(mo[kMoMin], 1) + ' (' + y[kMoMin] + ') y ' +
+        F.pct(mo[kMoMax], 1) + ' (' + y[kMoMax] + '). Una franja tan estrecha es propia de una filial que presta servicios al grupo con una remuneración fijada sobre sus costos. Es una hipótesis: la proporción de ingresos con vinculadas y el método de precios de transferencia no son públicos. ' +
+        'Si es así, la caída del margen dice más de cómo remunera el grupo a la filial que de su desempeño comercial.'],
       [cartera > 0.7 ? 'Pero la liquidez es cartera, no caja' : 'La liquidez', 'La disponibilidad inmediata es de ' + nf3.format(DI[l]) + ': el efectivo cubre el ' + F.pct(DI[l]) + ' del pasivo corriente. La liquidez corriente de ' +
-        nf2.format(LC[l]) + ' se sostiene sobre los deudores comerciales, que son el ' + F.pct(cartera) + ' del activo corriente: depende del recaudo.'],
+        nf2.format(LC[l]) + ' se sostiene sobre los deudores comerciales, que son el ' + F.pct(cartera) + ' del activo corriente. ' +
+        (ok(trmVar) ? 'Esa cartera sigue a la facturación y a la tasa de cambio más que a la cobranza: en ' + y[l] + ' varió ' + F.pctS(vp(CxC.nom[P], CxC.nom[l])) + ' nominal, casi lo mismo que la TRM de cierre (' +
+          F.pctS(trmVar) + ', Banco de la República), y los días de cartera pasaron de ' + nf0.format(ROT[P]) + ' a ' + nf0.format(ROT[l]) + '. ' : '') +
+        'Si son sobre todo saldos en dólares con vinculadas del exterior, el riesgo no es el impago sino la tasa de cambio y el momento en que el grupo los liquida. Es una inferencia: no hay desglose público de la cartera.'],
       ['Qué vigilar', 'La tasa efectiva de impuesto pasó de ' + F.pct(tasas[P]) + ' a ' + F.pct(tasas[l]) + '. No es un caso aislado: en la serie ha oscilado entre ' + F.pct(tasas[kTmin]) + ' (' + y[kTmin] + ') y ' +
-        F.pct(tasas[kTmax]) + ' (' + y[kTmax] + '). Como la tasa varía tanto, la utilidad neta no es una buena señal de la operación; mejor seguir el margen bruto, los días de cartera y el efectivo frente al pasivo corriente.']
+        F.pct(tasas[kTmax]) + ' (' + y[kTmax] + ').' +
+        (kT35 >= 0 ? ' La de ' + y[kT35] + ' superó la tarifa general de renta (35%): sin la conciliación de las notas no se puede separar el efecto de partidas no deducibles, precios de transferencia, impuesto diferido o diferencia en cambio.' : '') +
+        ' Como la tasa varía tanto, la utilidad neta no es una buena señal de la operación; mejor seguir el margen bruto, los días de cartera y el efectivo frente al pasivo corriente.']
     ];
     var col = function (bs) { return '<div>' + bs.map(function (b) { return '<h3>' + esc(b[0]) + '</h3><p>' + esc(b[1]) + '</p>'; }).join('') + '</div>'; };
     $('diag-grid').innerHTML = col([bloques[0], bloques[2]]) + col([bloques[1], bloques[3]]);

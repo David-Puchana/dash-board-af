@@ -11,7 +11,7 @@ services:
     environment:
       ANIO_VERTICAL_1: "2024"
       ANIO_VERTICAL_2: "2025"
-      LOGO_URL: ""
+      LOGO_URL: "https://statics.globant.com/com/public/2025-11/Globant%20%281%29_0.svg"
     volumes:
       - ./data:/datos:ro
     read_only: true

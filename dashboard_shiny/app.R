@@ -17,7 +17,7 @@ CONFIG <- list(
   ANIO_VERTICAL_1 = 2024L,
   ANIO_VERTICAL_2 = 2025L,
   # URL pública del logotipo OFICIAL (la guía prohíbe dibujarlo). Vacío = espacio reservado.
-  LOGO_URL = ""
+  LOGO_URL = "https://statics.globant.com/com/public/2025-11/Globant%20%281%29_0.svg"
 )
 
 # El modelo se calcula una vez al arrancar la app (los datos son estáticos).

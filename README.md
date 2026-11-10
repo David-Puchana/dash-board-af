@@ -100,5 +100,5 @@ La única diferencia deliberada con Apps Script está documentada en [`dashboard
 ## Créditos y avisos
 
 - **Fuentes:** Superintendencia de Sociedades (SIIS), DANE (IPC), y Form 20-F y comunicados de Globant para el perfil del grupo.
-- **Logotipo:** no se incluye. La guía de diseño del dossier prohíbe dibujarlo; se puede configurar la URL del archivo oficial.
+- **Logotipo:** el de Globant se carga desde su servidor oficial (`statics.globant.com`), no se redibuja ni se copia al repositorio. Se configura con `LOGO_URL`; si se deja vacío, se muestra un espacio reservado. Es marca de Globant y se usa solo para identificar al grupo analizado.
 - **Vínculo con Globant:** este trabajo no está afiliado ni respaldado por Globant ni por Sistemas Colombia S.A.S.

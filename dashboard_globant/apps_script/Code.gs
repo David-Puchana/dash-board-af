@@ -17,7 +17,7 @@ const CONFIG = {
   ANIO_VERTICAL_1: 2024,       // años del análisis vertical
   ANIO_VERTICAL_2: 2025,
   // URL pública del logotipo OFICIAL (la guía prohíbe dibujarlo). Vacío = se muestra el espacio reservado.
-  LOGO_URL: '',
+  LOGO_URL: 'https://statics.globant.com/com/public/2025-11/Globant%20%281%29_0.svg',
   TITULO: 'Dossier financiero · Sistemas Colombia S.A.S.'
 };
 
