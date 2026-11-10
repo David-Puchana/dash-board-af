@@ -1,0 +1,431 @@
+<script>
+/**
+ * Charts.html — Librería de gráficos SVG sin dependencias.
+ * Todos los gráficos traen efectos hover: atenuación del resto, resaltado de la marca activa,
+ * banda de fondo, etiqueta de valor y tooltip que sigue al cursor.
+ *
+ *   Charts.bars(el, opts)        barras verticales agrupadas (admite negativos)
+ *   Charts.hbars(el, opts)       barras horizontales agrupadas
+ *   Charts.lines(el, opts)       líneas con cruceta y tooltip
+ *   Charts.stack100(el, opts)    columnas apiladas 100%
+ *   Charts.waterfall(el, opts)   puente (cascada)
+ *   Charts.sparkline(el, vals)   mini línea para KPIs
+ *   Charts.legend(el, items, onHover)
+ *   Charts.Tip                   tooltip compartido
+ */
+var Charts = (function () {
+  var NS = 'http://www.w3.org/2000/svg';
+
+  function el(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    if (attrs) Object.keys(attrs).forEach(function (k) {
+      if (attrs[k] !== undefined && attrs[k] !== null) e.setAttribute(k, attrs[k]);
+    });
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, x, y, text, attrs) {
+    var t = el('text', Object.assign({ x: x, y: y }, attrs || {}), parent);
+    t.textContent = text;
+    return t;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+  }
+
+  /* ---------------- Tooltip ---------------- */
+  var Tip = {
+    node: function () { return document.getElementById('tooltip'); },
+    show: function (html, ev) {
+      var n = this.node(); if (!n) return;
+      n.innerHTML = html; n.classList.add('is-visible'); this.move(ev);
+    },
+    move: function (ev) {
+      var n = this.node(); if (!n || !ev) return;
+      var pad = 14, w = n.offsetWidth, h = n.offsetHeight;
+      var x = ev.clientX + pad, y = ev.clientY + pad;
+      if (x + w > window.innerWidth - 8) x = ev.clientX - w - pad;
+      if (y + h > window.innerHeight - 8) y = ev.clientY - h - pad;
+      n.style.left = Math.max(8, x) + 'px'; n.style.top = Math.max(8, y) + 'px';
+    },
+    hide: function () { var n = this.node(); if (n) n.classList.remove('is-visible'); },
+    row: function (key, val, color, lineSwatch) {
+      var sw = color ? '<span class="legend-swatch' + (lineSwatch ? ' line' : '') + '" style="background:' + color + '"></span>' : '';
+      return '<div class="tt-row"><span class="tt-key">' + sw + esc(key) + '</span><span class="tt-val">' + esc(val) + '</span></div>';
+    },
+    title: function (t) { return '<div class="tt-title">' + esc(t) + '</div>'; },
+    note: function (t) { return '<div class="tt-note">' + t + '</div>'; }
+  };
+
+  /* ---------------- Escalas ---------------- */
+  function niceTicks(min, max, count) {
+    count = count || 5;
+    if (min === max) { max = min === 0 ? 1 : min * 1.1; min = Math.min(0, min); }
+    var span = max - min, step0 = span / count;
+    var mag = Math.pow(10, Math.floor(Math.log10(step0))), norm = step0 / mag;
+    var step = (norm < 1.5 ? 1 : norm < 3 ? 2 : norm < 7 ? 5 : 10) * mag;
+    var lo = Math.floor(min / step) * step, hi = Math.ceil(max / step) * step;
+    var ticks = [];
+    for (var v = lo; v <= hi + step / 2; v += step) ticks.push(Math.round(v / step) * step);
+    return { lo: lo, hi: hi, ticks: ticks };
+  }
+  function linear(d0, d1, r0, r1) {
+    return function (v) { return r0 + (v - d0) / (d1 - d0 || 1) * (r1 - r0); };
+  }
+
+  function frame(container, opts) {
+    container.innerHTML = '';
+    var W = Math.max(container.clientWidth || 600, 280);
+    var H = opts.height || 280;
+    var m = Object.assign({ top: opts.unit ? 26 : 18, right: 16, bottom: 32, left: 60 }, opts.margin || {});
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, width: W, height: H, role: 'img', 'aria-label': opts.aria || '' }, container);
+    var g = el('g', { transform: 'translate(' + m.left + ',' + m.top + ')' }, svg);
+    if (opts.unit) txt(g, -m.left + 2, -m.top + 11, opts.unit, { class: 'axis-label' });
+    return { svg: svg, g: g, W: W, H: H, m: m, iw: W - m.left - m.right, ih: H - m.top - m.bottom };
+  }
+
+  function yGrid(f, ticks, y, fmt) {
+    var grid = el('g', { class: 'grid' }, f.g);
+    ticks.forEach(function (t) {
+      el('line', { x1: 0, x2: f.iw, y1: y(t), y2: y(t) }, grid);
+      txt(f.g, -8, y(t) + 4, fmt(t), { 'text-anchor': 'end' });
+    });
+  }
+
+  /** Rectángulo con extremos de dato redondeados (4 px) anclado a la base. */
+  function barPath(x, yA, yB, w, r, up) {
+    var top = Math.min(yA, yB), bot = Math.max(yA, yB), h = bot - top;
+    r = Math.min(r, w / 2, h);
+    if (h <= 0.5) return 'M' + x + ',' + top + 'h' + w + 'v0.5h' + (-w) + 'z';
+    if (up) {
+      return 'M' + x + ',' + bot + 'V' + (top + r) + 'Q' + x + ',' + top + ' ' + (x + r) + ',' + top +
+        'H' + (x + w - r) + 'Q' + (x + w) + ',' + top + ' ' + (x + w) + ',' + (top + r) + 'V' + bot + 'Z';
+    }
+    return 'M' + x + ',' + top + 'V' + (bot - r) + 'Q' + x + ',' + bot + ' ' + (x + r) + ',' + bot +
+      'H' + (x + w - r) + 'Q' + (x + w) + ',' + bot + ' ' + (x + w) + ',' + (bot - r) + 'V' + top + 'Z';
+  }
+
+  /** Activa el modo "atenuado" y resalta los elementos con data-k = key. */
+  function highlight(root, key) {
+    if (key === null || key === undefined) {
+      root.classList.remove('is-dim');
+      root.querySelectorAll('.is-active').forEach(function (n) { n.classList.remove('is-active'); });
+      return;
+    }
+    root.classList.add('is-dim');
+    root.querySelectorAll('[data-k]').forEach(function (n) {
+      n.classList.toggle('is-active', n.getAttribute('data-k') === String(key));
+    });
+  }
+
+  /* ---------------- Barras verticales agrupadas ---------------- */
+  function bars(container, o) {
+    var f = frame(container, o);
+    var cats = o.categories, series = o.series, n = cats.length, ns = series.length;
+    var all = [];
+    series.forEach(function (s) { s.values.forEach(function (v) { if (v !== null && isFinite(v)) all.push(v); }); });
+    var sc = niceTicks(Math.min(0, Math.min.apply(null, all.concat([0]))), Math.max(0, Math.max.apply(null, all.concat([0]))), 5);
+    var y = linear(sc.lo, sc.hi, f.ih, 0);
+    yGrid(f, sc.ticks, y, o.fmtAxis);
+    var cw = f.iw / n, pad = cw * 0.2, gap = 2;
+    var bw = Math.min(46, (cw - 2 * pad - gap * (ns - 1)) / ns);
+    var groupW = bw * ns + gap * (ns - 1);
+    var plot = el('g', {}, f.g);
+    var bands = el('g', {}, plot);
+    cats.forEach(function (c, ci) {
+      var x0 = ci * cw;
+      el('rect', { class: 'hover-band', x: x0 + 2, y: 0, width: cw - 4, height: f.ih, rx: 6, 'data-k': ci }, bands);
+      series.forEach(function (s, si) {
+        var v = s.values[ci];
+        if (v === null || !isFinite(v)) return;
+        var x = x0 + (cw - groupW) / 2 + si * (bw + gap);
+        var color = o.colorFn ? o.colorFn(v, ci, si) : o.colorBySign ? (v >= 0 ? 'var(--s1)' : 'var(--s3)') : s.color;
+        var p = el('path', { class: 'mark', d: barPath(x, y(0), y(v), bw, 4, v >= 0), 'data-k': ci }, plot);
+        p.style.fill = color;
+        var ly = v >= 0 ? y(v) - 6 : y(v) + 14;
+        var always = o.alwaysLabels || (o.labelIdx && o.labelIdx.indexOf(ci) !== -1 && si === ns - 1);
+        txt(plot, x + bw / 2, ly, (o.fmtLabel || o.fmtAxis)(v), { class: 'value-label' + (always ? ' always' : '') + (v < 0 ? ' neg' : ''), 'text-anchor': 'middle', 'data-k': ci });
+      });
+      txt(f.g, x0 + cw / 2, f.ih + 20, c, { 'text-anchor': 'middle', class: 'axis-label' + (o.strongIdx === ci ? ' strong' : '') });
+    });
+    el('line', { class: sc.lo < 0 ? 'zero-line' : 'baseline', x1: 0, x2: f.iw, y1: y(0), y2: y(0) }, f.g);
+    var hits = el('g', {}, f.g);
+    cats.forEach(function (c, ci) {
+      var h = el('rect', { class: 'hit', x: ci * cw, y: 0, width: cw, height: f.ih + 26 }, hits);
+      h.addEventListener('mouseenter', function (ev) { highlight(plot, ci); Tip.show(o.tooltip(ci), ev); });
+      h.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+      h.addEventListener('mouseleave', function () { highlight(plot, null); Tip.hide(); });
+    });
+    return f;
+  }
+
+  /* ---------------- Barras horizontales agrupadas ---------------- */
+  function hbars(container, o) {
+    var rows = o.categories, series = o.series, ns = series.length;
+    var rowH = o.rowHeight || (ns > 1 ? 36 : 26);
+    var labelW = o.labelWidth || 190;
+    var H = rows.length * rowH + 34;
+    var f = frame(container, { height: H, margin: { top: 6, right: o.rightPad || 56, bottom: o.hideAxis ? 6 : 28, left: labelW } });
+    var all = [0];
+    series.forEach(function (s) { s.values.forEach(function (v) { if (v !== null && isFinite(v)) all.push(v); }); });
+    var sc = niceTicks(Math.min.apply(null, all), Math.max.apply(null, all), 4);
+    var x = linear(sc.lo, sc.hi, 0, f.iw);
+    var grid = el('g', { class: 'grid' }, f.g);
+    if (!o.hideAxis) sc.ticks.forEach(function (t) {
+      el('line', { x1: x(t), x2: x(t), y1: 0, y2: rows.length * rowH }, grid);
+      txt(f.g, x(t), rows.length * rowH + 18, o.fmtAxis(t), { 'text-anchor': 'middle' });
+    });
+    var plot = el('g', {}, f.g);
+    var gap = 2, bh = o.barHeight || Math.min(13, (rowH - 10 - gap * (ns - 1)) / ns);
+    rows.forEach(function (r, ri) {
+      var y0 = ri * rowH;
+      el('rect', { class: 'hover-band', x: -labelW + 4, y: y0 + 1, width: f.iw + labelW + 50, height: rowH - 2, rx: 6, 'data-k': ri }, plot);
+      var label = r.length > 30 ? r.slice(0, 29) + '…' : r;
+      txt(f.g, -10, y0 + rowH / 2 + 4, label, { 'text-anchor': 'end', class: 'axis-label' + (o.strongIdx === ri ? ' strong' : '') });
+      var gh = bh * ns + gap * (ns - 1), top = y0 + (rowH - gh) / 2;
+      series.forEach(function (s, si) {
+        var v = s.values[ri];
+        if (v === null || !isFinite(v)) return;
+        var yy = top + si * (bh + gap);
+        var x1 = x(Math.min(0, v)), x2 = x(Math.max(0, v)), w = Math.max(0.5, x2 - x1), rr = Math.min(4, w / 2, bh / 2);
+        var d = v >= 0
+          ? 'M' + x1 + ',' + yy + 'H' + (x2 - rr) + 'Q' + x2 + ',' + yy + ' ' + x2 + ',' + (yy + rr) + 'V' + (yy + bh - rr) + 'Q' + x2 + ',' + (yy + bh) + ' ' + (x2 - rr) + ',' + (yy + bh) + 'H' + x1 + 'Z'
+          : 'M' + x2 + ',' + yy + 'H' + (x1 + rr) + 'Q' + x1 + ',' + yy + ' ' + x1 + ',' + (yy + rr) + 'V' + (yy + bh - rr) + 'Q' + x1 + ',' + (yy + bh) + ' ' + (x1 + rr) + ',' + (yy + bh) + 'H' + x2 + 'Z';
+        var p = el('path', { class: 'mark', d: d, 'data-k': ri }, plot);
+        p.style.fill = o.colorFn ? o.colorFn(v, ri, si) : s.color;
+        var lab = o.labelFn ? o.labelFn(v, ri) : o.fmtLabel(v);
+        var lx = o.labelsRight ? Math.max(x2, x(0)) + 6 : (v >= 0 ? x2 + 5 : x1 - 5);
+        txt(plot, lx, yy + bh / 2 + 4, lab, { class: 'value-label' + (o.alwaysLabels ? ' always' : '') + (v < 0 ? ' neg' : ''), 'text-anchor': o.labelsRight || v >= 0 ? 'start' : 'end', 'data-k': ri });
+      });
+    });
+    el('line', { class: 'baseline', x1: x(0), x2: x(0), y1: 0, y2: rows.length * rowH }, f.g);
+    rows.forEach(function (r, ri) {
+      var h = el('rect', { class: 'hit', x: -labelW, y: ri * rowH, width: f.iw + labelW + 56, height: rowH }, f.g);
+      h.addEventListener('mouseenter', function (ev) { highlight(plot, ri); Tip.show(o.tooltip(ri), ev); });
+      h.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+      h.addEventListener('mouseleave', function () { highlight(plot, null); Tip.hide(); });
+    });
+    return f;
+  }
+
+  /* ---------------- Líneas con cruceta ---------------- */
+  function lines(container, o) {
+    var f = frame(container, o);
+    var cats = o.categories, n = cats.length;
+    var all = [];
+    o.series.forEach(function (s) { s.values.forEach(function (v) { if (v !== null && isFinite(v)) all.push(v); }); });
+    if (o.refLine !== undefined) all.push(o.refLine);
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    if (o.zeroBased) lo = Math.min(0, lo);
+    var sc = niceTicks(lo, hi, 5);
+    var y = linear(sc.lo, sc.hi, f.ih, 0);
+    var x = function (i) { return n === 1 ? f.iw / 2 : i * f.iw / (n - 1); };
+    yGrid(f, sc.ticks, y, o.fmtAxis);
+    cats.forEach(function (c, i) { txt(f.g, x(i), f.ih + 20, c, { 'text-anchor': 'middle', class: 'axis-label' }); });
+    el('line', { class: 'baseline', x1: 0, x2: f.iw, y1: f.ih, y2: f.ih }, f.g);
+    if (o.refLine !== undefined) el('line', { class: 'zero-line', x1: 0, x2: f.iw, y1: y(o.refLine), y2: y(o.refLine) }, f.g);
+    var plot = el('g', {}, f.g);
+    var cross = el('line', { class: 'crosshair', x1: 0, x2: 0, y1: 0, y2: f.ih, opacity: 0 }, f.g);
+    var dots = [];
+    o.series.forEach(function (s, si) {
+      var d = '', started = false;
+      s.values.forEach(function (v, i) {
+        if (v === null || !isFinite(v)) { started = false; return; }
+        d += (started ? 'L' : 'M') + x(i) + ',' + y(v); started = true;
+      });
+      var p = el('path', { class: 'line', d: d, 'data-k': 's' + si }, plot);
+      p.style.stroke = s.color;
+      if (s.dashed) p.setAttribute('stroke-dasharray', '6 4');
+      if (o.endLabels) {
+        var idx = []; s.values.forEach(function (v, i) { if (v !== null && isFinite(v)) idx.push(i); });
+        [idx[0], idx[idx.length - 1]].forEach(function (i, k) {
+          txt(plot, x(i) + (k ? 8 : 0), y(s.values[i]) + (k ? 4 : 16), o.fmtLabel(s.values[i]), { class: 'end-label', 'text-anchor': k ? 'start' : 'start' });
+        });
+      }
+      dots.push(s.values.map(function (v, i) {
+        if (v === null || !isFinite(v)) return null;
+        var c = el('circle', { class: 'dot', cx: x(i), cy: y(v), r: 4 }, plot);
+        c.style.fill = s.color;
+        return c;
+      }));
+    });
+    var hits = el('g', {}, f.g);
+    var step = n > 1 ? f.iw / (n - 1) : f.iw;
+    cats.forEach(function (c, i) {
+      var h = el('rect', { class: 'hit', x: x(i) - step / 2, y: 0, width: step, height: f.ih + 26 }, hits);
+      h.addEventListener('mouseenter', function (ev) {
+        cross.setAttribute('x1', x(i)); cross.setAttribute('x2', x(i)); cross.setAttribute('opacity', 1);
+        dots.forEach(function (arr) { arr.forEach(function (d, j) { if (d) d.setAttribute('r', j === i ? 6.5 : 4); }); });
+        Tip.show(o.tooltip(i), ev);
+      });
+      h.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+      h.addEventListener('mouseleave', function () {
+        cross.setAttribute('opacity', 0);
+        dots.forEach(function (arr) { arr.forEach(function (d) { if (d) d.setAttribute('r', 4); }); });
+        Tip.hide();
+      });
+    });
+    f.highlightSeries = function (si) { highlight(plot, si === null ? null : 's' + si); };
+    return f;
+  }
+
+  /* ---------------- Columnas apiladas 100% ---------------- */
+  function stack100(container, o) {
+    var f = frame(container, { height: o.height || 300, margin: { top: 10, right: 8, bottom: 30, left: 40 } });
+    var y = linear(0, 1, f.ih, 0);
+    yGrid(f, [0, 0.25, 0.5, 0.75, 1], y, function (t) { return Math.round(t * 100) + '%'; });
+    var n = o.columns.length, cw = f.iw / n, bw = Math.min(90, cw * 0.62);
+    var plot = el('g', {}, f.g);
+    o.columns.forEach(function (col, ci) {
+      var x = ci * cw + (cw - bw) / 2, acc = 0;
+      var total = col.segments.reduce(function (a, s) { return a + Math.max(0, s.value); }, 0) || 1;
+      col.segments.forEach(function (s, si) {
+        var share = Math.max(0, s.value) / total;
+        if (share <= 0) { acc += share; return; }
+        var yTop = y(acc + share), yBot = y(acc);
+        var h = Math.max(0, yBot - yTop - 2); // 2 px de separación entre segmentos
+        var r = el('rect', { class: 'mark', x: x, y: yTop + 1, width: bw, height: h, rx: 3, 'data-k': s.name }, plot);
+        r.style.fill = s.color;
+        if (h > 18) txt(plot, x + bw / 2, yTop + 1 + h / 2 + 4, Math.round(share * 100) + '%', { class: 'seg-label', 'text-anchor': 'middle', fill: s.labelInk || '#fff' });
+        r.addEventListener('mouseenter', function (ev) { highlight(plot, s.name); Tip.show(o.tooltip(s.name, ci), ev); });
+        r.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+        r.addEventListener('mouseleave', function () { highlight(plot, null); Tip.hide(); });
+        acc += share;
+      });
+      txt(f.g, ci * cw + cw / 2, f.ih + 20, col.label, { 'text-anchor': 'middle', class: 'col-label' });
+    });
+    f.highlight = function (name) { highlight(plot, name); };
+    return f;
+  }
+
+  /* ---------------- Cascada / puente ---------------- */
+  function waterfall(container, o) {
+    var f = frame(container, { height: o.height || 340, unit: o.unit, margin: { top: 30, right: 12, bottom: 54, left: 66 } });
+    var steps = o.steps, run = 0, geo = [];
+    steps.forEach(function (s) {
+      if (s.kind === 'total') { geo.push({ a: 0, b: s.value }); run = s.value; }
+      else { geo.push({ a: run, b: run + s.value }); run += s.value; }
+    });
+    var vals = [0];
+    geo.forEach(function (g) { vals.push(g.a, g.b); });
+    var sc = niceTicks(Math.min.apply(null, vals), Math.max.apply(null, vals), 5);
+    var y = linear(sc.lo, sc.hi, f.ih, 0);
+    yGrid(f, sc.ticks, y, o.fmtAxis);
+    var n = steps.length, cw = f.iw / n, bw = Math.min(54, cw * 0.6);
+    var plot = el('g', {}, f.g);
+    steps.forEach(function (s, i) {
+      var g = geo[i], x = i * cw + (cw - bw) / 2;
+      el('rect', { class: 'hover-band', x: i * cw + 2, y: 0, width: cw - 4, height: f.ih, rx: 6, 'data-k': i }, plot);
+      var color = s.kind === 'total' ? 'var(--ink)' : (s.value >= 0 ? 'var(--pos)' : 'var(--neg)');
+      var top = Math.min(y(g.a), y(g.b)), h = Math.max(1, Math.abs(y(g.a) - y(g.b)));
+      var r = el('rect', { class: 'mark', x: x, y: top, width: bw, height: h, rx: 3, 'data-k': i }, plot);
+      r.style.fill = color;
+      if (i < n - 1) el('line', { class: 'connector', x1: x + bw, x2: (i + 1) * cw + (cw - bw) / 2, y1: y(g.b), y2: y(g.b) }, plot);
+      var lbl = (s.kind !== 'total' && s.value > 0 ? '+' : '') + o.fmtLabel(s.value);
+      var ly = (s.kind === 'total' ? s.value >= 0 : s.value >= 0) ? top - 6 : top + h + 14;
+      txt(plot, x + bw / 2, ly, lbl, { class: 'value-label always', 'text-anchor': 'middle' });
+      var words = s.label.split(' '), line1 = '', line2 = '';
+      words.forEach(function (w) { if ((line1 + ' ' + w).trim().length <= 14 && !line2) line1 = (line1 + ' ' + w).trim(); else line2 = (line2 + ' ' + w).trim(); });
+      txt(f.g, i * cw + cw / 2, f.ih + 18, line1, { 'text-anchor': 'middle', class: 'axis-label' });
+      if (line2) txt(f.g, i * cw + cw / 2, f.ih + 32, line2.length > 16 ? line2.slice(0, 15) + '…' : line2, { 'text-anchor': 'middle', class: 'axis-label' });
+    });
+    el('line', { class: sc.lo < 0 ? 'zero-line' : 'baseline', x1: 0, x2: f.iw, y1: y(0), y2: y(0) }, f.g);
+    steps.forEach(function (s, i) {
+      var h = el('rect', { class: 'hit', x: i * cw, y: 0, width: cw, height: f.ih + 40 }, f.g);
+      h.addEventListener('mouseenter', function (ev) { highlight(plot, i); Tip.show(o.tooltip(i), ev); });
+      h.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+      h.addEventListener('mouseleave', function () { highlight(plot, null); Tip.hide(); });
+    });
+    return f;
+  }
+
+  /* ---------------- Sparkline ---------------- */
+  function sparkline(container, values, color) {
+    container.innerHTML = '';
+    var v = values.filter(function (x) { return x !== null && isFinite(x); });
+    if (v.length < 2) return;
+    var W = Math.max(120, container.clientWidth || 160), H = 30, p = 3;
+    var lo = Math.min.apply(null, v), hi = Math.max.apply(null, v);
+    var x = function (i) { return p + i * (W - 2 * p) / (values.length - 1); };
+    var y = linear(lo, hi === lo ? lo + 1 : hi, H - p, p);
+    var svg = el('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', 'aria-hidden': 'true' }, container);
+    var d = '', started = false;
+    values.forEach(function (val, i) {
+      if (val === null || !isFinite(val)) { started = false; return; }
+      d += (started ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(val).toFixed(1); started = true;
+    });
+    var pth = el('path', { d: d }, svg); pth.style.stroke = color || 'var(--s1)';
+  }
+
+  /* ---------------- Leyenda interactiva ---------------- */
+  function legend(container, items, onHover) {
+    container.innerHTML = '';
+    items.forEach(function (it, i) {
+      var s = document.createElement('span');
+      s.className = 'legend-item';
+      s.innerHTML = '<span class="legend-swatch' + (it.line ? ' line' : '') + '" style="background:' + it.color + '"></span>' + esc(it.name);
+      if (onHover) {
+        s.addEventListener('mouseenter', function () { onHover(it.key !== undefined ? it.key : i); });
+        s.addEventListener('mouseleave', function () { onHover(null); });
+      }
+      container.appendChild(s);
+    });
+  }
+
+  /** Color de celda para el mapa de calor divergente (gris neutro en 0). */
+  function divergingColor(v, maxAbs) {
+    if (v === null || !isFinite(v)) return null;
+    var t = Math.min(1, Math.abs(v) / (maxAbs || 1));
+    var pct = Math.round(Math.pow(t, 0.75) * 100);
+    var pole = v >= 0 ? 'var(--s2)' : 'var(--s3)';
+    return { bg: 'color-mix(in oklab, ' + pole + ' ' + pct + '%, var(--bone))', ink: pct > 55 ? '#ffffff' : 'var(--ink)' };
+  }
+
+  /**
+   * Barras 100% horizontales en HTML (estructura). rows: [{label, right, rightClass, segments:[{name, value, color}]}]
+   * Hover: resalta el mismo segmento en todas las filas y muestra el tooltip.
+   */
+  function hstack(container, o) {
+    container.innerHTML = '';
+    var root = document.createElement('div'); root.className = 'hstack';
+    o.rows.forEach(function (r, ri) {
+      var total = r.segments.reduce(function (a, s) { return a + Math.max(0, s.value); }, 0) || 1;
+      var row = document.createElement('div'); row.className = 'hstack-row';
+      row.innerHTML = '<div class="hstack-head"><span>' + esc(r.label) + '</span><span class="note-r ' + (r.rightClass || '') + '">' + esc(r.right || '') + '</span></div>';
+      var bar = document.createElement('div'); bar.className = 'hstack-bar';
+      r.segments.forEach(function (s) {
+        var share = Math.max(0, s.value) / total;
+        if (share <= 0) return;
+        var d = document.createElement('div');
+        d.style.flex = String(share); d.style.background = s.color; d.dataset.k = s.name;
+        d.addEventListener('mouseenter', function (ev) { highlightHtml(root, s.name); Tip.show(o.tooltip(s.name, ri), ev); });
+        d.addEventListener('mousemove', function (ev) { Tip.move(ev); });
+        d.addEventListener('mouseleave', function () { highlightHtml(root, null); Tip.hide(); });
+        bar.appendChild(d);
+      });
+      row.appendChild(bar); root.appendChild(row);
+    });
+    container.appendChild(root);
+    if (o.legend) {
+      var ll = document.createElement('div'); ll.className = o.legendList ? 'legend-list' : 'legend';
+      ll.style.marginTop = '14px';
+      o.legend.forEach(function (it) {
+        var li = document.createElement('span'); li.className = o.legendList ? 'li' : 'legend-item';
+        li.innerHTML = '<span class="legend-swatch" style="background:' + it.color + '"></span>' + esc(it.name) +
+          (it.values ? it.values.map(function (v, k) { return '<span class="' + (k === it.values.length - 1 ? 'v' : 'v2') + '">' + esc(v) + '</span>'; }).join('') : '');
+        li.addEventListener('mouseenter', function () { highlightHtml(root, it.name); });
+        li.addEventListener('mouseleave', function () { highlightHtml(root, null); });
+        ll.appendChild(li);
+      });
+      container.appendChild(ll);
+    }
+  }
+  function highlightHtml(root, key) {
+    root.classList.toggle('is-dim', key !== null);
+    root.querySelectorAll('[data-k]').forEach(function (n) { n.classList.toggle('is-active', key !== null && n.dataset.k === key); });
+  }
+
+  return { hstack: hstack, bars: bars, hbars: hbars, lines: lines, stack100: stack100, waterfall: waterfall,
+           sparkline: sparkline, legend: legend, divergingColor: divergingColor, highlight: highlight, Tip: Tip, esc: esc };
+})();
+</script>

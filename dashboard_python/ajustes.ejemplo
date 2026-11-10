@@ -1,0 +1,5 @@
+# Copia este archivo a ajustes.conf en el servidor (chmod 600). ajustes.conf no se copia a la imagen.
+# Código del enlace secreto: python3 -c 'import secrets; print(secrets.token_urlsafe(32))'
+DASH_TOKEN=
+# Último día visible (hora de Bogotá); desde el día siguiente la página responde 410. Vacío = sin caducidad.
+EXPIRA=2026-11-30

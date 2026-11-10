@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dossier financiero · Sistemas Colombia S.A.S.</title>
+  <?!= include('Styles'); ?>
+</head>
+<body>
+
+  <!-- ===================== NAVEGACIÓN ===================== -->
+  <div class="topnav">
+    <div class="wrap topnav-row">
+      <div class="brand">
+        <!-- El logotipo oficial no se dibuja: se coloca el archivo (CONFIG.LOGO_URL en Code.gs) -->
+        <div class="logo-slot" id="logo-slot" aria-label="Espacio para el logotipo oficial"></div>
+        <div class="brand-rule"></div>
+        <div>
+          <div class="brand-name">Sistemas Colombia S.A.S.</div>
+          <div class="brand-nit">NIT 900.218.578</div>
+        </div>
+      </div>
+      <nav class="nav" aria-label="Secciones">
+        <a href="#perfil">Perfil</a>
+        <a href="#datos">Datos</a>
+        <a href="#resumen">Resumen</a>
+        <a href="#horizontal">Horizontal</a>
+        <a href="#vertical">Vertical</a>
+        <a href="#indicadores">Indicadores</a>
+        <a href="#diagnostico">Diagnóstico</a>
+      </nav>
+    </div>
+  </div>
+
+  <!-- ===================== PORTADA ===================== -->
+  <header class="hero" id="top">
+    <div class="wrap">
+      <div class="eyebrow">Análisis financiero · Ejercicios <span id="hero-periodo">2018 – 2025</span></div>
+      <h1 id="hero-title">Ocho ejercicios, <span class="hl">una sola lectura</span></h1>
+      <p class="lead">Dossier sobre Sistemas Colombia S.A.S., sociedad del grupo Globant en Colombia. Ocho ejercicios de estados financieros depositados ante la Superintendencia de Sociedades, depurados y reconstruidos cuenta por cuenta.</p>
+      <div class="meta-strip" id="meta-strip"></div>
+    </div>
+  </header>
+
+  <div id="estado-carga" class="loading">
+    <div class="spinner" aria-hidden="true"></div>
+    <p>Cargando datos de la hoja de cálculo…</p>
+  </div>
+  <div id="estado-error" class="error-box" hidden></div>
+
+  <div id="contenido" hidden>
+
+    <!-- ===================== 01 PERFIL ===================== -->
+    <section class="section" id="perfil">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">01</span><h2>De Buenos Aires a Bogotá</h2></div>
+        <p class="sec-lead">Qué es Globant, qué es Sistemas Colombia y por qué no son la misma cosa.</p>
+        <div class="row">
+          <div class="col-main">
+            <div class="prose" id="perfil-prosa"></div>
+            <h3 class="h3 mt">Hitos</h3>
+            <div class="prov" id="hitos"></div>
+          </div>
+          <div class="col-side">
+            <div class="note warn"><p id="nota-entidad"></p></div>
+            <div class="card">
+              <div class="label">Ficha de la sociedad</div>
+              <dl class="facts" id="facts-empresa"></dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="band">
+      <div class="wrap">
+        <div style="flex: 1 1 260px; min-width: 0">
+          <div class="band-fig" id="band-fig"></div>
+          <div class="band-cap" id="band-cap"></div>
+        </div>
+        <div style="flex: 999 1 420px; min-width: 0"><p id="band-text"></p></div>
+      </div>
+    </section>
+
+    <!-- ===================== 02 DATOS ===================== -->
+    <section class="section alt" id="datos">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">02</span><h2>De dónde sale cada cifra</h2></div>
+        <p class="sec-lead">Los archivos originales no se pueden apilar sin más: contienen columnas duplicadas, filas corridas y re-expresiones contables. Esta es la trazabilidad completa.</p>
+        <div class="row">
+          <div class="col-main">
+            <h3 class="h3" id="titulo-defectos">Defectos detectados</h3>
+            <div class="defects" id="defectos"></div>
+          </div>
+          <div class="col-side">
+            <h3 class="h3" style="margin:0">Procedencia por ejercicio</h3>
+            <div class="prov" id="procedencia"></div>
+            <div class="note"><p id="nota-unidad"></p></div>
+          </div>
+        </div>
+        <div class="row mt">
+          <div class="col-half">
+            <h3 class="h3">Deflactor (IPC Colombia)</h3>
+            <div class="tbl-box"><div class="tbl-scroll"><table class="tbl" id="tb-def"></table></div>
+              <p class="tbl-foot">Factor = índice del año base ÷ índice del año. Fuente: DANE, IPC total nacional, variación anual a diciembre.</p></div>
+          </div>
+          <div class="col-half">
+            <div class="card-head-row"><h3 class="h3">Diferencias entre versiones</h3>
+              <label class="label" style="display:inline-flex;gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-weight:500"><input type="checkbox" id="chk-reexp" checked> Solo &gt; 1% del total</label></div>
+            <div class="tbl-box"><div class="tbl-scroll tall"><table class="tbl" id="tb-reexp"></table></div>
+              <p class="tbl-foot">Cifra usada frente a la otra versión disponible de la misma cifra (reporte propio o comparativo siguiente).</p></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 03 RESUMEN ===================== -->
+    <section class="section" id="resumen">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">03</span><h2 id="titulo-resumen">Dónde está la compañía</h2></div>
+        <p class="sec-lead" id="lead-resumen"></p>
+        <div class="kpis" id="kpis-resumen"></div>
+        <div class="row tight mt">
+          <div class="card col-half">
+            <div class="card-title">Ingresos de actividades ordinarias</div>
+            <div class="card-sub">Pesos nominales y pesos constantes de <span class="y-base"></span> · miles de millones</div>
+            <div class="legend" id="leg-ingresos"></div>
+            <div class="chart" id="ch-ingresos"></div>
+          </div>
+          <div class="card col-half">
+            <div class="card-title">Márgenes sobre ingresos</div>
+            <div class="card-sub">Bruto, operacional y neto · porcentaje</div>
+            <div class="legend" id="leg-margenes"></div>
+            <div class="chart" id="ch-margenes"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 04 HORIZONTAL ===================== -->
+    <section class="section" id="horizontal">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Análisis horizontal</h2></div>
+        <p class="sec-lead" id="lead-horizontal"></p>
+        <div class="controls">
+          <div class="seg" role="group" aria-label="Modo de variación">
+            <button type="button" data-var="pct" class="is-active">Variación %</button>
+            <button type="button" data-var="abs">Variación absoluta</button>
+          </div>
+          <div class="seg" role="group" aria-label="Tipo de pesos">
+            <button type="button" data-modo="nom">Pesos nominales</button>
+            <button type="button" data-modo="real" class="is-active">Pesos de <span class="y-base"></span></button>
+          </div>
+          <select id="sel-h-periodo" class="select" aria-label="Período"></select>
+        </div>
+        <div class="tbl-box">
+          <div class="tbl-scroll"><table class="tbl" id="tb-h-clave"></table></div>
+          <p class="tbl-foot" id="foot-h-clave"></p>
+        </div>
+
+        <div class="row mt">
+          <div class="card col-half">
+            <div class="card-title">Ritmo de crecimiento de los ingresos</div>
+            <div class="card-sub">Variación porcentual contra el año anterior · <span class="lbl-modo"></span></div>
+            <div class="chart" id="ch-ritmo"></div>
+          </div>
+          <div class="col-half prose" id="prosa-horizontal"></div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-title">Crecimiento acumulado</div>
+          <div class="card-sub">Índice <span class="y0"></span> = 100 · <span class="lbl-modo"></span>. Por encima de 100 creció; en pesos constantes, creció más que la inflación.</div>
+          <div class="legend" id="leg-indice"></div>
+          <div class="chart tall" id="ch-indice"></div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-head-row">
+            <div>
+              <div class="card-title" id="titulo-cuenta">Evolución por cuenta</div>
+              <div class="card-sub">Valor anual y variación contra el año anterior · <span class="lbl-modo"></span></div>
+            </div>
+            <select id="sel-cuenta" class="select" aria-label="Cuenta"></select>
+          </div>
+          <div class="row tight">
+            <div class="col-half"><div class="chart" id="ch-cuenta-valor"></div></div>
+            <div class="col-half"><div class="chart" id="ch-cuenta-var"></div></div>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-title">Mapa de variaciones</div>
+          <div class="card-sub">Variación % contra el año anterior · <span class="lbl-modo"></span>. Clic en una celda para verla arriba.</div>
+          <div class="heat-key" id="heat-key"></div>
+          <div class="tbl-scroll"><table class="heat" id="tb-heat"></table></div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-head-row">
+            <div>
+              <div class="card-title">Qué movió la utilidad neta</div>
+              <div class="card-sub">Puente entre dos ejercicios · <span class="lbl-modo"></span> · miles de millones</div>
+            </div>
+            <div class="controls" style="margin:0">
+              <select id="sel-puente-desde" class="select" aria-label="Año inicial"></select>
+              <span class="mono" style="color:var(--ink-3)">→</span>
+              <select id="sel-puente-hasta" class="select" aria-label="Año final"></select>
+            </div>
+          </div>
+          <div class="chart tall" id="ch-puente"></div>
+        </div>
+
+        <div class="mt">
+          <div class="controls">
+            <h3 class="h3" style="margin:0 auto 0 0">Tabla completa</h3>
+            <div class="seg" role="group" aria-label="Estado">
+              <button type="button" data-estado="er" class="is-active">Estado de resultados</button>
+              <button type="button" data-estado="esf">Balance</button>
+            </div>
+            <select id="sel-h-periodo-2" class="select" aria-label="Período de la tabla completa"></select>
+          </div>
+          <div class="tbl-box">
+            <div class="tbl-scroll"><table class="tbl" id="tb-h-full"></table></div>
+            <p class="tbl-foot">Cifras en millones de pesos colombianos. Las filas en fondo claro son subtotales.</p>
+          </div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-head-row">
+            <div>
+              <div class="card-title">Prompt para investigar las causas</div>
+              <div class="card-sub">Se arma con las variaciones reales más grandes. Pégalo en un asistente con búsqueda web.</div>
+            </div>
+            <button type="button" class="btn" id="btn-copiar">Copiar prompt</button>
+          </div>
+          <textarea id="txt-prompt" class="prompt-box" readonly></textarea>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 05 VERTICAL ===================== -->
+    <section class="section alt" id="vertical">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">05</span><h2>Análisis vertical</h2></div>
+        <p class="sec-lead">Peso de cada cuenta dentro de su total: en resultados sobre los ingresos ordinarios, en balance sobre el activo total. Mide la estructura, no el ritmo.</p>
+        <div class="row tight">
+          <div class="card col-half">
+            <div class="card-title">Reparto de cada 100 pesos de ingreso</div>
+            <div class="card-sub"><span class="vy1"></span> contra <span class="vy2"></span> · porcentaje</div>
+            <div id="ch-reparto"></div>
+          </div>
+          <div class="card col-half">
+            <div class="card-title">Composición del activo</div>
+            <div class="card-sub">Porcentaje del activo total · <span class="vy1"></span> y <span class="vy2"></span></div>
+            <div id="ch-activo"></div>
+          </div>
+        </div>
+        <div class="row mt">
+          <div class="col-half prose" id="prosa-vertical-1"></div>
+          <div class="col-half prose" id="prosa-vertical-2"></div>
+        </div>
+        <div class="card mt">
+          <div class="card-title">Financiación del activo</div>
+          <div class="card-sub">Pasivo corriente, pasivo no corriente y patrimonio · porcentaje del total</div>
+          <div id="ch-financiacion"></div>
+        </div>
+        <h3 class="h3 mt">Estado de resultados comparativo</h3>
+        <div class="tbl-box">
+          <div class="tbl-scroll"><table class="tbl" id="tb-v-er"></table></div>
+          <p class="tbl-foot">Cifras en millones de pesos. AV = % sobre ingresos. Δ pp = cambio en puntos porcentuales del peso.</p>
+        </div>
+        <h3 class="h3 mt">Estado de situación financiera comparativo</h3>
+        <div class="tbl-box">
+          <div class="tbl-scroll"><table class="tbl" id="tb-v-esf"></table></div>
+          <p class="tbl-foot">Cifras en millones de pesos. Metodología del taller: AV1 = % del subtotal del grupo (corriente o no corriente); AV2 = % del total de activos, del total de pasivos o del total de patrimonio, según el lado.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 06 INDICADORES ===================== -->
+    <section class="section" id="indicadores">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">06</span><h2>Indicadores de salud financiera</h2></div>
+        <p class="sec-lead">Los siete indicadores solicitados, más dos complementarios, calculados sobre la serie depurada.</p>
+        <div class="note warn" style="margin-bottom:20px"><p id="nota-coinciden"></p></div>
+        <div class="kpis" id="kpis-indicadores"></div>
+        <div class="tbl-box mt">
+          <div class="tbl-scroll"><table class="tbl" id="tb-ind"></table></div>
+          <p class="tbl-foot">Capital de trabajo en millones de pesos; el resto en veces, días o porcentaje según corresponda. En rojo, el peor momento de cada serie.</p>
+        </div>
+        <div class="row tight mt">
+          <div class="card col-half">
+            <div class="card-title">Razones de liquidez</div>
+            <div class="card-sub">Veces. La prueba ácida coincide con la liquidez corriente y no se dibuja aparte.</div>
+            <div class="legend" id="leg-liq"></div>
+            <div class="chart" id="ch-liq"></div>
+          </div>
+          <div class="card col-half">
+            <div class="card-title">Capital de trabajo</div>
+            <div class="card-sub">Activo corriente − pasivo corriente · <span class="lbl-modo"></span> · miles de millones</div>
+            <div class="chart" id="ch-ct"></div>
+          </div>
+          <div class="card col-half">
+            <div class="card-title">Capacidad de endeudamiento</div>
+            <div class="card-sub">Activo total ÷ pasivo total · veces</div>
+            <div class="chart" id="ch-ce"></div>
+          </div>
+          <div class="card col-half">
+            <div class="card-title">Cobertura de gastos</div>
+            <div class="card-sub">Días de costos y gastos operacionales que cubre el activo corriente sin inventarios</div>
+            <div class="chart" id="ch-cg"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 07 DIAGNÓSTICO ===================== -->
+    <section class="section diag" id="diagnostico">
+      <div class="wrap">
+        <div class="sec-head"><span class="sec-num">07</span><h2>Diagnóstico</h2></div>
+        <p class="sec-lead">Qué dicen las tres lecturas juntas.</p>
+        <div class="diag-grid" id="diag-grid"></div>
+        <div class="emph" id="emph"></div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="wrap">
+      <span class="legal">Documento de análisis. No constituye asesoría de inversión ni opinión de auditoría.</span>
+      <span>Fuente: Superintendencia de Sociedades (SIIS) · DANE · <span id="pie-generado"></span></span>
+    </div>
+  </footer>
+
+  <div id="tooltip" class="tooltip" role="tooltip"></div>
+
+  <script>window.LOGO_URL = <?!= JSON.stringify(logoUrl) ?>;</script>
+  <?!= include('Charts'); ?>
+  <?!= include('JavaScript'); ?>
+</body>
+</html>
