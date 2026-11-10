@@ -136,10 +136,21 @@ FUENTE_ANIO = {
 
 # Excepciones por bloque de filas: (tipo, año) → (filas, reporte, columna). El comparativo 2024 del reporte 2025
 # está corrido en el activo, pero su bloque de patrimonio es sano y re-expresa 2024 (otras participaciones → reservas).
+# El pasivo NO corriente de 2022 (filas 46-55) se toma de su reporte propio: el comparativo del reporte 2023 usa la
+# clasificación atípica de la nota 3 (arrendamientos en otros pasivos financieros, provisiones no corrientes dentro de
+# otros pasivos no financieros), que el reporte 2024 abandona al re-expresar 2023. El total no corriente es idéntico en
+# las dos versiones. El pasivo corriente (filas 41-42) sigue en el reporte 2023: su reclasificación de financieros a no
+# financieros va en el mismo sentido que la re-expresión del reporte 2024, así que no se trata como atípica.
 FUENTE_BLOQUE = {
+    ('SituacionFinanciera', 2022): (range(46, 56), 2022, 1),
     ('SituacionFinanciera', 2024): (range(59, 68), 2025, 2),
 }
 # Columnas comparativas que NO sirven para calcular variaciones homogéneas (están dañadas en la fuente).
+# Pares t-1 → t que ya comparten clasificación aunque vengan de reportes distintos, cuando la "base homogénea" del
+# reporte t sería la atípica: no se marcan con †. 2022 (reporte 2022) → 2023 (re-expresado por el reporte 2024).
+PAR_YA_HOMOGENEO = {
+    ('SituacionFinanciera', 2023): range(46, 56),
+}
 COMPARATIVO_DANADO = {
     ('SituacionFinanciera', 2021): range(1, 200),   # copia de la columna 2021
     ('SituacionFinanciera', 2025): range(1, 59),    # activo y pasivo corridos una fila (el patrimonio está sano)
@@ -176,6 +187,8 @@ def homogeneas(tipo, defs, reps, data):
     out = []
     for code, row, label, *_ in defs:
         for y in range(2019, 2026):
+            if row in PAR_YA_HOMOGENEO.get((tipo, y), ()):
+                continue
             danado = row in COMPARATIVO_DANADO.get((tipo, y), ())
             prev_h, cur_h = num(reps[y][row][2]), num(reps[y][row][1])
             if danado:
@@ -229,14 +242,25 @@ HOMO = [('ER',) + r for r in homogeneas('InformeIntegral', ER_DEF, er_reps, ER)]
 # Quitar cuentas de ESF que son cero en todos los años (se conserva INV: lo usa la prueba ácida)
 ESF_DEF_USE = [d for d in ESF_DEF if d[3] != 'detalle' or d[0] == 'INV'
                or any(ESF[d[0]][y] for y in YEARS)]
+# Homogenea solo con cuentas que están en la base (sin filas huérfanas)
+_USADAS = {d[0] for d in ESF_DEF_USE}
+HOMO = [h for h in HOMO if h[0] == 'ER' or h[1] in _USADAS]
 
 # ---------------- Reexpresiones -----------------
+def desc_usada(tipo, y, row):
+    """Procedencia de una cifra concreta: la del bloque si la fila tiene excepción, si no la del año."""
+    b = FUENTE_BLOQUE.get(('InformeIntegral' if tipo == 'ER' else 'SituacionFinanciera', y))
+    if b and row in b[0]:
+        return f'Reporte {b[1]}' if b[2] == 1 else f'Cifra re-expresada en el reporte {b[1]}'
+    return FUENTE_ANIO[y][2]
+
+
 reexp = []
 for tipo, defs, D, A in [('ER', ER_DEF, ER, ER_ALT), ('ESF', ESF_DEF, ESF, ESF_ALT)]:
-    for code, _, label, *_ in defs:
+    for code, row, label, *_ in defs:
         for y, (v, fuente_alt) in A[code].items():
             if v != D[code][y]:
-                reexp.append((tipo, y, code, label, D[code][y], FUENTE_ANIO[y][2], v, fuente_alt, D[code][y] - v))
+                reexp.append((tipo, y, code, label, D[code][y], desc_usada(tipo, y, row), v, fuente_alt, D[code][y] - v))
 # Los años marcados como re-expresados deben tener diferencias reales con su reporte propio
 for y, (ry, col, _, est) in FUENTE_ANIO.items():
     if col == 2 and y >= 2019 and not any(r[1] == y for r in reexp):
@@ -341,7 +365,7 @@ header(ws, ['N°', 'Tema', 'Nota', 'Impacto'])
 notas = [
     (1, 'El balance 2020–2021 duplica la columna comparativa', 'En el reporte de corte 2021 las columnas 2021 y 2020 son idénticas, también en la vista web del SIIS. Ninguna coincide con el 2020 real (total activos $262.106.073 M frente a $379.223.013 M). 2020 se toma de su propio reporte.', 'Defecto de la fuente'),
     (2, 'El balance 2024–2025 corre el comparativo 2024 una fila', 'Los $385.798.378 M de deudores comerciales aparecen rotulados como inventarios y los impuestos corrientes como activos biológicos. 2024 se toma de su propio reporte, que sí es coherente.', 'Defecto de la fuente'),
-    (3, 'El reporte 2023 usa una clasificación atípica del balance', 'En sus dos columnas (2023 y 2022) ubica el impuesto diferido, los arrendamientos y las provisiones no corrientes en filas distintas a las de los reportes 2022, 2024 y 2025. El reporte 2024 re-expresa 2023 con la clasificación habitual y aporta información nueva (reparte las provisiones en 1.089.123 y 718.545), así que no es un corrimiento: 2023 se toma del reporte 2024.', 'Criterio aplicado'),
+    (3, 'El reporte 2023 usa una clasificación atípica del balance', 'En sus dos columnas (2023 y 2022) ubica los arrendamientos en otros pasivos financieros no corrientes y las provisiones no corrientes dentro de otros pasivos no financieros; en la columna 2023 pone además el impuesto diferido en activos por impuestos corrientes no corrientes. El reporte 2024 re-expresa 2023 con la clasificación habitual y aporta información nueva (reparte las provisiones en 1.089.123 y 718.545), así que no es un corrimiento: 2023 se toma del reporte 2024 y el pasivo no corriente de 2022 de su reporte propio, que usa la clasificación habitual. El pasivo corriente de 2022 sigue en el reporte 2023 (su paso de 6.128.026 de financieros a no financieros va en el mismo sentido que la re-expresión del reporte 2024).', 'Criterio aplicado'),
     (4, 'Re-expresiones usadas: 2019, 2021, 2022, 2023 y patrimonio 2024', 'La compañía re-expresó esas cifras en el reporte del año siguiente (p. ej. ingresos 2019: 347.742.446 → 346.570.569; costo de ventas 2021: 594.737.380 → 560.715.684; PPE 2022: 132.934.182 → 43.204.382 con reclasificación a otros activos financieros; patrimonio 2024: otras participaciones 26.721.326 pasan a otras reservas). Se usa la cifra re-expresada, según el criterio del dossier.', 'Criterio aplicado'),
     (12, 'Cambio de base en las variaciones', 'Usar la cifra re-expresada del año t deja el año t−1 en la base anterior, así que algunas variaciones mezclan dos clasificaciones (p. ej. gastos operacionales 2020→2021: +77,4% mostrado frente a +22,9% en base homogénea). Esas variaciones se marcan con † y el detalle muestra la variación homogénea según el reporte del año t (hoja Homogenea).', 'Criterio aplicado'),
     (13, 'Incongruencia en la re-expresión de 2019', 'En el reporte 2020 la utilidad neta 2019 baja 3,2 M mientras el patrimonio 2019 sube 3,2 M (ganancias acumuladas +12,6 M, otras reservas −9,4 M). Sin las notas a los estados financieros no se puede descartar un error de la fuente.', 'Sin resolver'),
@@ -393,6 +417,11 @@ ws = wb.create_sheet('Fuentes')
 header(ws, ['Año', 'Procedencia', 'Estado', 'Archivo ER', 'Archivo ESF', 'Columna'])
 for y in YEARS:
     ry, col, desc, est = FUENTE_ANIO[y]
+    for (t, yb), (filas, rb, cb) in FUENTE_BLOQUE.items():
+        if yb == y and t == 'SituacionFinanciera':
+            desc += (f'; filas {filas.start}-{filas.stop - 1} del balance desde el '
+                     + (f'reporte propio {rb} (900218578_SituacionFinanciera_{rb-1}-12-31_{rb}-12-31.xlsx, columna actual)' if cb == 1
+                        else f'comparativo del reporte {rb} (900218578_SituacionFinanciera_{rb-1}-12-31_{rb}-12-31.xlsx)'))
     ws.append([y, desc, est, f'900218578_InformeIntegral_{ry-1}-12-31_{ry}-12-31.xlsx',
                f'900218578_SituacionFinanciera_{ry-1}-12-31_{ry}-12-31.xlsx',
                'Actual' if col == 1 else 'Comparativa'])

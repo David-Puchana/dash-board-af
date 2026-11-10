@@ -191,7 +191,8 @@ def construir(m):
         f"Cada afirmación lleva su certeza: {c('C')} lo dice una fuente; {c('P')} lo apoyan los datos sin prueba directa; {c('H')} inferencia del analista. "
         "Esta guía revisa esas certezas contra la serie completa y, donde la serie no las sostiene, las rebaja. Ninguna lectura tuvo acceso a las notas a los estados financieros.</p></div>"
         '<div class="caja"><h4>De dónde salen las cifras</h4><p>Cada año se toma de su propio reporte en Supersociedades. Cuando la compañía corrigió la cifra en el reporte del año siguiente, '
-        f"se usa la versión corregida ({lista(str(a) for a in reexp)}; en 2024, solo el patrimonio). Los totales cuadran en los {n} años: "
+        f"se usa la versión corregida ({lista(str(a) for a in reexp)}). Dos excepciones por bloque: en 2022 el pasivo no corriente sale de su reporte propio, porque el comparativo "
+        f"del reporte 2023 usa una clasificación atípica que el reporte 2024 abandona; en 2024 solo el patrimonio sale del reporte siguiente. Los totales cuadran en los {n} años: "
         f"el activo es igual al pasivo más el patrimonio (diferencia máxima: {num(m['cuadre']['maxDiferencia'])}).</p></div>",
         salto=False))
 
@@ -483,7 +484,7 @@ def construir(m):
             f"Crece con la cartera. Que parte del aumento de 2024 fuera cambiario es {c('H')}: el resultado financiero de 2024 ({corto(fin_[y.index(2024)])}) no muestra una ganancia cambiaria.") +
         ind("Capacidad de endeudamiento", "activo total ÷ pasivo total", "Cuántas veces cubren los activos el total de la deuda.", "Más alto = más margen para pedir prestado.",
             f"{veces(ld('CE')[l])} veces en {y[l]}{', el máximo de la serie' if mejor('CE') == l else ''} (mínimo de {veces(min(ld('CE')))} en {y[imin(ld('CE'))]}).",
-            f"Por rótulo, los otros pasivos financieros son {corto(nom(E, 'OPFC')[l] + nom(E, 'OPFNC')[l])} de un pasivo de {corto(nom(E, 'PT')[l])}. Parte de los otros pasivos no financieros "
+            f"Por rótulo, los otros pasivos financieros son {corto(sum(nom(E, k)[l] for k in ('OPFC', 'OPFNC') if k in E))} de un pasivo de {corto(nom(E, 'PT')[l])}. Parte de los otros pasivos no financieros "
             f"no corrientes ({corto(nom(E, 'OPNFNC')[l])}) podrían ser arrendamientos (NIIF 16), que sí son pasivos financieros {c('H')}: la base anota que el reporte 2023 movió los arrendamientos de fila. En {y[l]} la mejora viene sobre todo de la caída del pasivo ({pcts(vp(nom(E, 'PT')[P], nom(E, 'PT')[l]))} nominal), "
             f"más que del patrimonio ({pcts(vp(nom(E, 'PAT')[P], nom(E, 'PAT')[l]))}).") +
         ind("Endeudamiento total (complementario)", "pasivo total ÷ activo total", "Qué porcentaje del activo está financiado con recursos de terceros.",

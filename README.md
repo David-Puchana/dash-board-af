@@ -29,6 +29,7 @@ Análisis financiero 2018–2025 de **Sistemas Colombia S.A.S.** (NIT 900.218.57
   - Comprueba que cuadren las cascadas del estado de resultados y los totales del balance.
   - Si algo no cuadra, se detiene con error.
 - **Criterio de selección:** se usa el reporte propio de cada año cuando existe y es coherente, y el comparativo del reporte siguiente cuando la compañía re-expresó la cifra.
+  - Hay dos excepciones por bloque de filas. El pasivo no corriente de 2022 sale de su reporte propio, porque el comparativo del reporte 2023 usa una clasificación atípica que el reporte 2024 abandona. El patrimonio de 2024 sale del reporte 2025.
   - Cada decisión queda registrada en las hojas `Fuentes`, `Reexpresiones` y `Homogenea` de la base.
   - Las variaciones que comparan bases distintas se marcan con † en la interfaz.
 - **Defectos de la fuente que se corrigen:**
