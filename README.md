@@ -101,5 +101,6 @@ La única diferencia deliberada con Apps Script está documentada en [`dashboard
 ## Créditos y avisos
 
 - **Fuentes:** Superintendencia de Sociedades (SIIS), DANE (IPC), y Form 20-F y comunicados de Globant para el perfil del grupo.
+- **Contexto de las variaciones:** [informe de explicación de diez variaciones 2018–2025](<Sistemas Colombia S.A.S. (Globant)_ explicación de diez variaciones de los estados financieros 2018-2025.md>), con una nota de revisión al inicio sobre las dos afirmaciones que la base no sostiene.
 - **Logotipo:** el de Globant se carga desde su servidor oficial (`statics.globant.com`), no se redibuja ni se copia al repositorio. Se configura con `LOGO_URL`; si se deja vacío, se muestra un espacio reservado. Es marca de Globant y se usa solo para identificar al grupo analizado.
 - **Vínculo con Globant:** este trabajo no está afiliado ni respaldado por Globant ni por Sistemas Colombia S.A.S.
