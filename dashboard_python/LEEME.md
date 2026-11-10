@@ -90,3 +90,17 @@ Los años del análisis vertical y el logotipo se configuran con `ANIO_VERTICAL_
 ## Página pública en GitHub Pages
 
 `python3 exportar_pages.py --publico` genera `../docs/index.html` (más `.nojekyll`): una sola página con todo dentro, sin ruta secreta, sin `noindex` y sin caducidad. GitHub Pages la publica desde la carpeta `/docs` de la rama `main`. Para actualizar, regenérala, haz commit y push.
+
+## Guía de lectura (PDF)
+
+`Guia_lectura_dashboard.pdf`, en la raíz del repo, se genera desde el dashboard. Las cifras de cada «Qué dice hoy» salen del mismo modelo (`calculos.py`) y las imágenes son capturas de `docs/index.html`, así que la guía no puede contradecir a la página. Para regenerarla después de cambiar datos o diseño:
+
+```bash
+cd dashboard_python
+python3 sincronizar.py && python3 exportar_pages.py --publico     # 1. página actualizada
+cd guia
+NODE_PATH=<node_modules con puppeteer-core> node capturas.js      # 2. capturas (npm i puppeteer-core; usa google-chrome)
+python3 exportar_guia.py                                          # 3. guia.html y ../../Guia_lectura_dashboard.pdf
+```
+
+El contexto externo (Globant, TRM, informe de variaciones) es texto fijo en `exportar_guia.py`, con su nivel de certeza. Las TRM están en `TRM_CIERRE` y `TRM_PROMEDIO`, y deben coincidir con las del diagnóstico en `JavaScript.html`.
